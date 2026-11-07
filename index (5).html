@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fernanda Candida</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#030307; --ink:#ece9f7; --dim:#85809c;
+    --ember:#d99a63; --glow:#b9b3ff;
+    --serif:'Cormorant Garamond',serif; --sans:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--sans); overflow:hidden;}
+  #gl{position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:grab;}
+  #gl.dragging{cursor:grabbing;}
+  #gl.hover{cursor:pointer;}
+
+  .wordmark{
+    position:fixed; top:30px; left:50%; transform:translateX(-50%); z-index:5;
+    font-family:var(--mono); font-size:15px; letter-spacing:.32em; color:#cfcbe6;
+    text-transform:uppercase; text-align:center; user-select:none; pointer-events:none; white-space:nowrap;
+    text-shadow:0 0 14px rgba(185,179,255,0.55), 0 1px 3px rgba(0,0,0,0.9);
+  }
+  .wordmark b{color:#fff; font-weight:500; font-size:19px; letter-spacing:.3em; text-shadow:0 0 18px rgba(255,190,120,0.65), 0 1px 3px rgba(0,0,0,0.9);}
+  .footer-hint{
+    position:fixed; bottom:28px; left:50%; transform:translateX(-50%); z-index:5;
+    font-family:var(--mono); font-size:12px; letter-spacing:.2em; color:#cfcbe6;
+    opacity:.9; text-transform:uppercase; transition:opacity .4s ease; pointer-events:none; white-space:nowrap;
+    text-shadow:0 0 10px rgba(185,179,255,0.5), 0 1px 2px rgba(0,0,0,0.9);
+  }
+
+  .label{
+    position:fixed; top:0; left:0; z-index:4; pointer-events:none;
+    font-family:var(--mono); font-weight:500; font-size:13px; letter-spacing:.18em; color:#fff;
+    text-transform:uppercase; white-space:nowrap;
+    padding:8px 16px; border-radius:999px;
+    background:rgba(12,11,20,0.62); border:1px solid rgba(236,233,247,0.38);
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    text-shadow:0 0 10px rgba(185,179,255,0.9), 0 1px 2px rgba(0,0,0,0.9);
+    box-shadow:0 0 18px rgba(185,179,255,0.28), 0 4px 14px rgba(0,0,0,0.5);
+    transition:color .3s ease, border-color .3s ease, box-shadow .3s ease, background .3s ease, opacity .4s ease;
+    will-change:transform;
+  }
+  .label.sun{
+    font-size:15px; padding:10px 20px; color:#ffe9c7; border-color:rgba(255,190,110,0.75);
+    text-shadow:0 0 12px rgba(255,170,70,1), 0 1px 3px rgba(0,0,0,0.9);
+    box-shadow:0 0 26px rgba(255,150,60,0.55), 0 4px 16px rgba(0,0,0,0.5);
+  }
+  .label.hot{
+    color:#fff; background:rgba(217,154,99,0.30); border-color:var(--ember);
+    text-shadow:0 0 12px rgba(255,170,70,1), 0 1px 2px rgba(0,0,0,0.9);
+    box-shadow:0 0 28px rgba(217,154,99,0.7), 0 4px 14px rgba(0,0,0,0.5);
+  }
+
+  .card{
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:min(92vw,460px); max-height:0; overflow:hidden; z-index:7;
+    border-radius:22px; border:1px solid rgba(236,233,247,0.22);
+    background:linear-gradient(180deg,rgba(20,19,28,0.92),rgba(9,9,13,0.96));
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    box-shadow:0 30px 80px rgba(0,0,0,0.55);
+    opacity:0; pointer-events:none; padding:0 34px;
+    transition:max-height .7s cubic-bezier(.2,.8,.2,1), opacity .5s ease .1s, padding .7s ease;
+  }
+  .card.open{max-height:min(78vh,560px); opacity:1; pointer-events:all; padding:38px 34px 32px;}
+  .card .k{font-family:var(--mono); font-size:10px; letter-spacing:.22em; color:var(--ember); text-transform:uppercase; margin-bottom:14px;}
+  .card h2{font-family:var(--serif); font-weight:500; font-size:28px; margin:0 0 14px; line-height:1.15;}
+  .card p{font-size:14px; line-height:1.7; color:#c9c6db; margin:0 0 10px;}
+  .card-body{max-height:330px; overflow-y:auto; padding-right:6px;}
+  .card-body::-webkit-scrollbar{width:4px;}
+  .card-body::-webkit-scrollbar-thumb{background:rgba(236,233,247,0.18); border-radius:4px;}
+  .mini-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:18px 0 6px;}
+  .mini-stats div{border:1px solid rgba(236,233,247,0.14); border-radius:10px; padding:10px 4px; text-align:center;}
+  .mini-stats b{display:block; font-family:var(--serif); font-size:19px; color:var(--ink);}
+  .mini-stats span{font-family:var(--mono); font-size:8px; letter-spacing:.06em; color:var(--dim); text-transform:uppercase;}
+  .plist{list-style:none; margin:14px 0 0; padding:0;}
+  .plist li{padding:9px 0; border-bottom:1px solid rgba(236,233,247,0.08); font-size:13.5px; color:#c9c6db; display:flex; gap:10px;}
+  .plist li b{color:var(--ink); min-width:112px; font-weight:500;}
+  .tier{border:1px solid rgba(236,233,247,0.14); border-radius:12px; padding:14px 16px; margin-bottom:10px;}
+  .tier.pop{border-color:var(--ember);}
+  .tier .tname{font-family:var(--mono); font-size:10px; letter-spacing:.14em; color:var(--ember); text-transform:uppercase;}
+  .tier .tdesc{font-size:13px; color:#c9c6db; margin-top:4px;}
+  .clinks{display:flex; flex-direction:column; gap:10px; margin-top:16px;}
+  .clinks a{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    border:1px solid rgba(236,233,247,0.16); border-radius:10px; padding:12px 14px;
+    color:var(--ink); font-size:13.5px; text-decoration:none; transition:border-color .25s ease, background .25s ease;
+  }
+  .clinks a:hover{border-color:var(--ember); background:rgba(217,154,99,0.08);}
+  .clinks span.l{color:var(--dim); font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;}
+  .card .close{
+    position:absolute; top:18px; right:20px; width:28px; height:28px; border-radius:50%;
+    border:1px solid rgba(236,233,247,0.2); display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-family:var(--mono); font-size:14px; color:var(--dim);
+  }
+  .card .close:hover{color:var(--ink); border-color:var(--ink);}
+
+  .nojs{position:fixed; inset:0; display:none; align-items:center; justify-content:center; text-align:center; padding:24px; color:var(--dim); font-family:var(--mono); font-size:12px; z-index:20;}
+
+  @media (max-width:560px){
+    .wordmark{font-size:11px; letter-spacing:.2em;}
+    .wordmark b{font-size:14px; letter-spacing:.2em;}
+    .label{font-size:10px; padding:6px 11px; letter-spacing:.12em;}
+    .label.sun{font-size:11px; padding:7px 13px;}
+    .footer-hint{font-size:9px; letter-spacing:.12em;}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="gl"></canvas>
+<div class="wordmark"><b>FERNANDA CANDIDA</b> — SÃO PAULO</div>
+<div class="footer-hint" id="hint">arraste para girar · role para aproximar · clique nos astros</div>
+<div class="nojs" id="nojs">Não foi possível carregar o 3D. Verifique sua conexão com a internet e recarregue a página.</div>
+
+<div class="card" id="card">
+  <div class="close" id="closeBtn">×</div>
+  <div class="k" id="cardK">Perfil</div>
+  <h2 id="cardTitle">—</h2>
+  <div class="card-body" id="cardBody">—</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  if(typeof THREE === 'undefined'){ document.getElementById('nojs').style.display='flex'; return; }
+
+  /* ---------- CONTEÚDO ---------- */
+  const sections = {
+    sob:{ label:'☉ Sol · Perfil', k:'01 · O Sol · Perfil', title:'Fernanda Candida',
+      bodyHtml:`<p>Analista administrativo financeiro com <b style="color:var(--ink)">mais de 20 anos de experiência</b> em cobrança, crédito, faturamento e contas a pagar, atuando em empresas de telecom, informação, consultoria e distribuição.</p>
+      <div class="mini-stats">
+        <div><b>20+</b><span>Anos</span></div>
+        <div><b>2004</b><span>Início da carreira</span></div>
+        <div><b>6</b><span>Empresas</span></div>
+        <div><b>9</b><span>Anos em cobrança</span></div>
+      </div>
+      <ul class="plist">
+        <li><b>Área</b> Administrativo-financeiro</li>
+        <li><b>Foco</b> Cobrança e faturamento</li>
+        <li><b>Formação</b> Comunicação Organizacional e Negócio</li>
+        <li><b>Local</b> São Paulo, SP</li>
+      </ul>` },
+    com:{ label:'Competências', k:'02 · Habilidades', title:'Principais competências',
+      bodyHtml:`<p>Base sólida em rotinas financeiras e automação de planilhas, com visão analítica aplicada a crédito e recebíveis.</p>
+      <ul class="plist">
+        <li><b>VBA</b> Visual Basic for Applications</li>
+        <li><b>Cobrança</b> Contas a receber</li>
+        <li><b>Finanças</b> Finanças quantitativas</li>
+      </ul>` },
+    atu:{ label:'Atual', k:'03 · Experiência atual', title:'Posições atuais',
+      bodyHtml:`
+      <div class="tier pop"><div class="tname">★ GrupoSC Distribuidora de Medicamentos</div><div class="tdesc">Assistente administrativo · ago/2024 — atual</div></div>
+      <div class="tier pop"><div class="tname">★ Artplan</div><div class="tdesc">Assistente administrativo · mai/2022 — atual</div></div>` },
+    ant:{ label:'Trajetória', k:'04 · Experiência anterior', title:'Trajetória profissional',
+      bodyHtml:`
+      <div class="tier"><div class="tname">Michael Page · fev — mar/2020</div><div class="tdesc">Assistente · Faturamento para projeto da Thomson Reuters, interrompido pela pandemia.</div></div>
+      <div class="tier"><div class="tname">EloPar · ago/2018 — set/2019</div><div class="tdesc">Assistente administrativo · Contas a pagar e facilities. Barueri, SP.</div></div>
+      <div class="tier"><div class="tname">Thomson Reuters · jun/2015 — ago/2018</div><div class="tdesc">Assistente administrativo · Interface entre cobrança, faturamento e vendas.</div></div>
+      <div class="tier"><div class="tname">Nextel Telecomunicações · 2004 — 2013</div><div class="tdesc">Analista de cobrança · Análise de crédito e cobrança por 9 anos.</div></div>` },
+    for:{ label:'Formação', k:'05 · Formação', title:'Formação acadêmica',
+      bodyHtml:`<p>Graduação voltada à comunicação e à gestão de negócios.</p>
+      <ul class="plist">
+        <li><b>Curso</b> Comunicação Organizacional e Negócio</li>
+        <li><b>Instituição</b> Universidade Bandeirante de São Paulo</li>
+        <li><b>Período</b> 2006 — 2008</li>
+      </ul>` },
+    con:{ label:'Contato', k:'06 · Conexão', title:'Vamos conversar',
+      bodyHtml:`<p>Disponível para oportunidades nas áreas administrativa e financeira em São Paulo.</p>
+      <div class="clinks">
+        <a href="https://wa.me/5511967754952" target="_blank" rel="noopener"><span>WhatsApp</span><span class="l">+55 11 96775-4952</span></a>
+        <a href="mailto:fe.candida@gmail.com"><span>Email</span><span class="l">fe.candida@gmail.com</span></a>
+        <a href="https://www.linkedin.com/in/fernandacandida-5470a295" target="_blank" rel="noopener"><span>LinkedIn</span><span class="l">ver perfil</span></a>
+        <a href="#" onclick="return false" style="cursor:default;"><span>Local</span><span class="l">São Paulo, SP</span></a>
+      </div>` }
+  };
+
+  /* planetas: Sol = Perfil */
+  const planetDefs = [
+    { key:'com', radius:1.5, orbit:16, speed:0.55, base:'#bfae96', alt:'#8a7a66', tilt:0.02 },
+    { key:'atu', radius:2.1, orbit:22, speed:0.42, base:'#d99a63', alt:'#a8653a', tilt:0.05 },
+    { key:'ant', radius:2.4, orbit:29, speed:0.32, base:'#5f8fcf', alt:'#2f5a96', tilt:0.41 },
+    { key:'for', radius:2.6, orbit:37, speed:0.24, base:'#e6cf9a', alt:'#b79a5c', tilt:0.47, ring:true },
+    { key:'con', radius:2.0, orbit:45, speed:0.18, base:'#9b8cff', alt:'#5f50c8', tilt:0.15 }
+  ];
+
+  /* ---------- CENA ---------- */
+  const canvas = document.getElementById('gl');
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+  renderer.setClearColor(0x030307, 1);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x030307, 0.0035);
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 2000);
+
+  scene.add(new THREE.AmbientLight(0x2a2840, 0.9));
+  const sunLight = new THREE.PointLight(0xffe2b8, 2.4, 0, 1.2);
+  scene.add(sunLight);
+
+  /* texturas procedurais */
+  function rng(seed){ let s=seed; return ()=> (s = (s*16807)%2147483647)/2147483647; }
+  function makeTexture(base, alt, seed, bands){
+    const w=512,h=256, c=document.createElement('canvas'); c.width=w; c.height=h;
+    const g=c.getContext('2d'); const r=rng(seed);
+    g.fillStyle=base; g.fillRect(0,0,w,h);
+    const n = bands||14;
+    for(let i=0;i<n;i++){
+      const y=r()*h, th=6+r()*28;
+      g.globalAlpha=0.10+r()*0.30; g.fillStyle=alt; g.fillRect(0,y,w,th);
+    }
+    for(let i=0;i<1400;i++){
+      g.globalAlpha=0.03+r()*0.07; g.fillStyle = r()>.5 ? alt : '#ffffff';
+      g.fillRect(r()*w, r()*h, 2+r()*14, 1+r()*3);
+    }
+    g.globalAlpha=1;
+    const t=new THREE.CanvasTexture(c); t.anisotropy=4; return t;
+  }
+  function glowTexture(inner, outer){
+    const c=document.createElement('canvas'); c.width=c.height=256; const g=c.getContext('2d');
+    const gr=g.createRadialGradient(128,128,0,128,128,128);
+    gr.addColorStop(0,inner); gr.addColorStop(0.25,outer); gr.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=gr; g.fillRect(0,0,256,256);
+    return new THREE.CanvasTexture(c);
+  }
+
+  /* Sol */
+  const sunGroup = new THREE.Group(); scene.add(sunGroup);
+  const sunMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(7,64,64),
+    new THREE.MeshBasicMaterial({ map: makeTexture('#ffd27a','#ff7a2a',7,26) })
+  );
+  sunMesh.userData.key='sob';
+  sunGroup.add(sunMesh);
+  const glow1 = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture('rgba(255,214,150,0.95)','rgba(255,150,60,0.28)'), blending:THREE.AdditiveBlending, depthWrite:false, transparent:true }));
+  glow1.scale.set(38,38,1); sunGroup.add(glow1);
+  const glow2 = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture('rgba(185,179,255,0.35)','rgba(185,179,255,0.08)'), blending:THREE.AdditiveBlending, depthWrite:false, transparent:true }));
+  glow2.scale.set(78,78,1); sunGroup.add(glow2);
+
+  /* raios da coroa solar */
+  function raysTexture(count, minLen, varLen, width, alpha, seed){
+    const c=document.createElement('canvas'); c.width=c.height=1024; const g=c.getContext('2d');
+    g.translate(512,512); const r=rng(seed);
+    for(let i=0;i<count;i++){
+      const a=(i/count)*Math.PI*2 + (r()-0.5)*0.05, len=minLen+r()*varLen, w=width*(0.5+r());
+      const gr=g.createRadialGradient(0,0,60,0,0,len);
+      gr.addColorStop(0,'rgba(255,205,125,'+alpha+')');
+      gr.addColorStop(0.5,'rgba(255,170,80,'+(alpha*0.45)+')');
+      gr.addColorStop(1,'rgba(255,150,60,0)');
+      g.fillStyle=gr; g.beginPath(); g.moveTo(0,0); g.arc(0,0,len,a-w,a+w); g.closePath(); g.fill();
+    }
+    return new THREE.CanvasTexture(c);
+  }
+  function raySprite(tex, size, opacity){
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:opacity, fog:false }));
+    sp.scale.set(size,size,1); sunGroup.add(sp); return sp;
+  }
+  /* três camadas de raios: densos e curtos, médios, e longos e finos */
+  const rays  = raySprite(raysTexture(90, 260, 120, 0.020, 0.60, 11), 60, 0.90);
+  const rays2 = raySprite(raysTexture(48, 330, 170, 0.030, 0.55, 23), 84, 0.75);
+  const rays3 = raySprite(raysTexture(24, 420, 90,  0.012, 0.50, 37), 110, 0.65);
+
+  /* estrelas */
+  (function(){
+    const N=2200, pos=new Float32Array(N*3), col=new Float32Array(N*3);
+    for(let i=0;i<N;i++){
+      const r=300+Math.random()*500, th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+      pos[i*3]=r*Math.sin(ph)*Math.cos(th); pos[i*3+1]=r*Math.cos(ph); pos[i*3+2]=r*Math.sin(ph)*Math.sin(th);
+      const k=0.6+Math.random()*0.4; col[i*3]=k; col[i*3+1]=k*0.97; col[i*3+2]=Math.min(1,k*1.1);
+    }
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+    scene.add(new THREE.Points(geo,new THREE.PointsMaterial({size:1.6,vertexColors:true,sizeAttenuation:false,transparent:true,opacity:.85,fog:false})));
+  })();
+
+  /* planetas + órbitas */
+  const planets = [];
+  planetDefs.forEach((d,i)=>{
+    const group = new THREE.Group(); group.rotation.x = d.tilt*0.15; scene.add(group);
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(d.radius,40,40),
+      new THREE.MeshStandardMaterial({ map: makeTexture(d.base,d.alt,31+i*17,12+i*2), roughness:0.85, metalness:0.0 })
+    );
+    mesh.userData.key = d.key;
+    const holder = new THREE.Group(); holder.add(mesh); group.add(holder);
+
+    if(d.ring){
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(d.radius*1.5, d.radius*2.5, 96),
+        new THREE.MeshBasicMaterial({ color:0xd9c28a, side:THREE.DoubleSide, transparent:true, opacity:0.55, depthWrite:false })
+      );
+      ring.rotation.x = Math.PI/2 - 0.42;
+      holder.add(ring);
+      const ring2 = new THREE.Mesh(
+        new THREE.RingGeometry(d.radius*2.58, d.radius*2.9, 96),
+        new THREE.MeshBasicMaterial({ color:0xb79a5c, side:THREE.DoubleSide, transparent:true, opacity:0.28, depthWrite:false })
+      );
+      ring2.rotation.x = Math.PI/2 - 0.42;
+      holder.add(ring2);
+    }
+
+    /* atmosfera sutil */
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture('rgba(255,255,255,0.0)','rgba(185,179,255,0.18)'), blending:THREE.AdditiveBlending, depthWrite:false, transparent:true }));
+    halo.scale.set(d.radius*4.2, d.radius*4.2, 1); holder.add(halo);
+
+    /* linha da órbita */
+    const pts=[]; for(let a=0;a<=128;a++){ const t=a/128*Math.PI*2; pts.push(new THREE.Vector3(Math.cos(t)*d.orbit,0,Math.sin(t)*d.orbit)); }
+    const orbitLine = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({ color:0xece9f7, transparent:true, opacity:0.12 }));
+    group.add(orbitLine);
+
+    planets.push({ def:d, group, holder, mesh, line:orbitLine, angle: i*1.35+0.6 });
+  });
+
+  /* rótulos */
+  const labelEls = {};
+  function makeLabel(key){
+    const el=document.createElement('div'); el.className='label'+(key==='sob'?' sun':''); el.textContent=sections[key].label;
+    document.body.appendChild(el); labelEls[key]=el;
+  }
+  makeLabel('sob'); planetDefs.forEach(d=>makeLabel(d.key));
+
+  /* ---------- CÂMERA (arraste / zoom) ---------- */
+  const cam = { theta:0.6, phi:1.12, dist:78, tTheta:0.6, tPhi:1.12, tDist:78 };
+  function isMobile(){ return window.innerWidth < 620; }
+  function resize(){
+    const w=window.innerWidth,h=window.innerHeight;
+    renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();
+    cam.tDist = Math.max(cam.tDist, 0); if(!interacted) cam.tDist = isMobile()? 110 : 78;
+  }
+  let interacted=false;
+  function placeCamera(){
+    cam.theta += (cam.tTheta-cam.theta)*0.08;
+    cam.phi   += (cam.tPhi-cam.phi)*0.08;
+    cam.dist  += (cam.tDist-cam.dist)*0.08;
+    const s=Math.sin(cam.phi), c=Math.cos(cam.phi);
+    camera.position.set(cam.dist*s*Math.sin(cam.theta), cam.dist*c, cam.dist*s*Math.cos(cam.theta));
+    camera.lookAt(0,0,0);
+  }
+
+  let dragging=false, lastX=0,lastY=0, downX=0,downY=0, moved=0;
+  canvas.addEventListener('pointerdown',e=>{
+    if(isOpen) return;
+    dragging=true; moved=0; lastX=downX=e.clientX; lastY=downY=e.clientY; canvas.setPointerCapture(e.pointerId); canvas.classList.add('dragging');
+  });
+  canvas.addEventListener('pointermove',e=>{
+    if(dragging){
+      const dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
+      moved += Math.abs(dx)+Math.abs(dy);
+      cam.tTheta -= dx*0.006; cam.tPhi = Math.min(Math.max(cam.tPhi - dy*0.005, 0.25), 1.75);
+      interacted=true; autoRotate=false;
+    } else if(!isOpen){ updateHover(e.clientX,e.clientY); }
+  });
+  canvas.addEventListener('pointerup',e=>{
+    if(!dragging) return; dragging=false; canvas.classList.remove('dragging');
+    if(moved<6 && !isOpen){ const k=pick(e.clientX,e.clientY); if(k) openCard(k); }
+  });
+  canvas.addEventListener('wheel',e=>{
+    if(isOpen) return; e.preventDefault(); interacted=true;
+    cam.tDist = Math.min(Math.max(cam.tDist + e.deltaY*0.06, 28), 150);
+  },{passive:false});
+
+  /* pinça (toque) */
+  const touches = new Map(); let pinchStart=0, distStart=0;
+  canvas.addEventListener('pointerdown',e=>{ touches.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(touches.size===2){ const [a,b]=[...touches.values()]; pinchStart=Math.hypot(a.x-b.x,a.y-b.y); distStart=cam.tDist; dragging=false; } });
+  canvas.addEventListener('pointermove',e=>{ if(touches.has(e.pointerId)){ touches.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(touches.size===2){ const [a,b]=[...touches.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); cam.tDist=Math.min(Math.max(distStart*(pinchStart/d),28),150); interacted=true; } } });
+  ['pointerup','pointercancel'].forEach(t=>canvas.addEventListener(t,e=>touches.delete(e.pointerId)));
+
+  /* ---------- SELEÇÃO ---------- */
+  const raycaster = new THREE.Raycaster(); const ndc = new THREE.Vector2();
+  const pickables = [sunMesh, ...planets.map(p=>p.mesh)];
+  function pick(x,y){
+    ndc.set((x/window.innerWidth)*2-1, -(y/window.innerHeight)*2+1);
+    raycaster.setFromCamera(ndc,camera);
+    const hit = raycaster.intersectObjects(pickables,false)[0];
+    if(hit) return hit.object.userData.key;
+    /* tolerância: astro mais próximo do clique na tela */
+    let best=null, bd=38; const v=new THREE.Vector3();
+    [['sob',sunMesh],...planets.map(p=>[p.def.key,p.mesh])].forEach(([k,m])=>{
+      m.getWorldPosition(v); v.project(camera); if(v.z>1) return;
+      const sx=(v.x+1)/2*window.innerWidth, sy=(1-v.y)/2*window.innerHeight;
+      const d=Math.hypot(sx-x,sy-y); if(d<bd){bd=d; best=k;}
+    });
+    return best;
+  }
+  let hoverKey=null;
+  function updateHover(x,y){
+    const k=pick(x,y);
+    if(k!==hoverKey){
+      if(hoverKey) labelEls[hoverKey].classList.remove('hot');
+      hoverKey=k; if(k) labelEls[k].classList.add('hot');
+      canvas.classList.toggle('hover',!!k);
+    }
+  }
+
+  /* ---------- CARD ---------- */
+  const card=document.getElementById('card'), cardK=document.getElementById('cardK'),
+        cardTitle=document.getElementById('cardTitle'), cardBody=document.getElementById('cardBody'),
+        closeBtn=document.getElementById('closeBtn'), hint=document.getElementById('hint');
+  let isOpen=false, openKey=null, autoRotate=true, orbitSpeed=1, targetSpeed=1;
+
+  function openCard(key){
+    const s=sections[key]; if(!s) return;
+    cardK.textContent=s.k; cardTitle.textContent=s.title; cardBody.innerHTML=s.bodyHtml; cardBody.scrollTop=0;
+    card.classList.add('open'); isOpen=true; openKey=key; targetSpeed=0.12; hint.style.opacity=0;
+    Object.keys(labelEls).forEach(k=>labelEls[k].classList.toggle('hot',k===key));
+    canvas.classList.remove('hover');
+  }
+  function closeCard(){
+    card.classList.remove('open'); isOpen=false; openKey=null; targetSpeed=1; hint.style.opacity=.9;
+    Object.keys(labelEls).forEach(k=>labelEls[k].classList.remove('hot'));
+  }
+  closeBtn.addEventListener('click',e=>{ e.stopPropagation(); closeCard(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape' && isOpen) closeCard(); });
+
+  /* ---------- LOOP ---------- */
+  const clock = new THREE.Clock(); const tmp=new THREE.Vector3();
+  const reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function updateLabel(key, obj, lift){
+    obj.getWorldPosition(tmp); tmp.y += lift; tmp.project(camera);
+    const el=labelEls[key];
+    if(tmp.z>1){ el.style.opacity=0; return; }
+    const x=(tmp.x+1)/2*window.innerWidth, y=(1-tmp.y)/2*window.innerHeight;
+    el.style.opacity = isOpen && key!==openKey ? 0 : 1;
+    el.style.transform = `translate(${x}px,${y}px) translate(-50%,-100%)`;
+  }
+
+  function frame(){
+    const dt=Math.min(clock.getDelta(),0.05), t=clock.elapsedTime;
+    orbitSpeed += (targetSpeed-orbitSpeed)*0.05;
+    if(autoRotate && !isOpen && !reduced) cam.tTheta += dt*0.02;
+
+    planets.forEach(p=>{
+      if(!reduced) p.angle += dt*p.def.speed*0.35*orbitSpeed;
+      p.holder.position.set(Math.cos(p.angle)*p.def.orbit, 0, Math.sin(p.angle)*p.def.orbit);
+      if(!reduced) p.mesh.rotation.y += dt*0.35*orbitSpeed;
+    });
+    if(!reduced) sunMesh.rotation.y += dt*0.05;
+    const pulse = 1+Math.sin(t*1.4)*0.025; glow1.scale.set(38*pulse,38*pulse,1);
+    rays.material.rotation += dt*0.05; rays2.material.rotation -= dt*0.03; rays3.material.rotation += dt*0.015;
+    const flick = 1+Math.sin(t*2.1)*0.04; rays.scale.set(60*flick,60*flick,1); rays2.scale.set(84/flick,84/flick,1);
+
+    placeCamera();
+    updateLabel('sob', sunMesh, 8.6);
+    planets.forEach(p=>updateLabel(p.def.key, p.mesh, p.def.radius*(p.def.ring?1.9:1.35)));
+
+    renderer.render(scene,camera);
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize',resize);
+  resize(); cam.dist=cam.tDist; frame();
+})();
+</script>
+</body>
+</html>
